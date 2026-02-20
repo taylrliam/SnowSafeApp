@@ -52,12 +52,6 @@ The map is constrained to the Toronto boundary to maintain focus on the study ar
 - Highlights nearby sidewalk and cycling segments
 
 
-## Video Demonstration
-
-INSERT VIDEO LINK
-
-
-
 ## Live App
 
 https://taylrliam.github.io/SnowSafeApp/
