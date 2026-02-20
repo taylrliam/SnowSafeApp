@@ -1,0 +1,1331 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1" />
+  <title>Sustainable Transportation – Community Updates</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.32/"></script>
+
+  <style>
+    html, body, #viewDiv { padding:0; margin:0; height:100%; width:100%; } /*  makes map fill entire screen and renders properly*/
+/* positions button to top left and overall ui like color and styling */
+    #makeReportBtn{
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 999;
+      font-family: Arial, sans-serif;
+      padding: 10px 14px;
+      border: 1px solid #cfcfcf;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    }
+
+    /*  clear selection button (same styling) */
+    #clearSelectionBtn{
+      position:absolute;
+      top: 60px;
+      left: 15px;
+      z-index: 999;
+      display:none;
+      font-family: Arial, sans-serif;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #cfcfcf;
+      background: white;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    }
+
+    /* branding label (just cosmetic) */
+    #brandBadge{
+      position:absolute;
+      bottom: 10px;
+      left: 12px;
+      z-index: 999;
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      color:#2b2b2b;
+      background: rgba(255,255,255,0.85);
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 6px 10px;
+      border-radius: 999px;
+      backdrop-filter: blur(6px);
+    }
+
+    .esri-ui-top-left { top: 60px; }
+    .esri-layer-list { width: 240px !important; }
+/*  main control panel for filers plus overall ui and styling ie rounded corners scrollable if it gets too long */
+    #sidebar {
+      position: absolute;
+      top: 60px;
+      left: 15px;
+      z-index: 998;
+      width: 340px;
+      max-width: 90vw;
+      max-height: calc(100vh - 80px);
+      overflow: auto;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid #dcdcdc;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      font-family: Arial, sans-serif;
+      display: none;
+      backdrop-filter: blur(6px);
+    }
+
+    #sidebarHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 12px 12px 8px 12px;
+      border-bottom: 1px solid #eee;
+    }
+    #sidebarHeader h3{
+      margin:0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    #closeSidebar{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      font-size: 18px;
+      line-height: 18px;
+    }
+
+    .section{
+      padding: 12px;
+      border-bottom: 1px solid #f1f1f1;
+    }
+    .section:last-child{ border-bottom:none; }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    label{
+      font-size: 12px;
+      color:#333;
+      display:block;
+      margin-bottom:6px;
+      font-weight: 600;
+    }
+    select, textarea, input{
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid #d4d4d4;
+      border-radius: 10px;
+      outline: none;
+      font-size: 13px;
+      background: white;
+    }
+    textarea{ min-height: 70px; resize: vertical; }
+
+    .btn{
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #cfcfcf;
+      background: white;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .btnPrimary{
+      border: 1px solid #2b6cb0;
+      background: #2b6cb0;
+      color: white;
+    }
+    .btnPrimary:hover{
+      background: #1f5aa6;
+    }
+
+    .hint{
+      font-size: 12px;
+      color:#555;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .pill{
+      font-size: 12px;
+      padding: 5px 8px;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    #cards{ display:flex; flex-direction:column; gap:10px; }
+    .card{
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 10px;
+      cursor: pointer;
+      background: #fff;
+      transition: 0.2s ease;
+    }
+    .card:hover{
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+
+    .cardTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .cardTitle{
+      font-weight: 800;
+      font-size: 13px;
+      margin: 0 0 4px 0;
+    }
+    .cardMeta{
+      font-size: 12px;
+      color:#555;
+      margin: 0;
+    }
+    .sevChip{
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #e5e5e5;
+      white-space: nowrap;
+    }
+
+    .warn{
+      background: #fff8e1;
+      border: 1px solid #ffe2a6;
+      color: #6a4b00;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .ok{
+      background: #eefaf0;
+      border: 1px solid #cbeed3;
+      color: #1f5b2a;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .muted{
+      font-size: 12px;
+      color:#666;
+      line-height:1.35;
+    }
+
+    /* Welcome page*/
+    #welcomeOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: flex;            /* visible by default */
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+    }
+    #welcomeCard{
+      width: min(520px, 92vw);
+      background: rgba(255,255,255,0.96);
+      border: 1px solid rgba(0,0,0,0.10);
+      border-radius: 16px;
+      box-shadow: 0 16px 42px rgba(0,0,0,0.25);
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      transform: translateY(0);
+      animation: popIn 180ms ease-out;
+    }
+    @keyframes popIn{
+      from { transform: translateY(8px); opacity: 0.6; }
+      to   { transform: translateY(0);   opacity: 1; }
+    }
+    #welcomeHeader{
+      padding: 14px 16px 10px 16px;
+      border-bottom: 1px solid #eee;
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    #welcomeHeaderTitle{
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1f2a37;
+    }
+    #welcomeCloseX{
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 18px;
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
+    #welcomeCloseX:hover{ background: rgba(0,0,0,0.06); }
+    #welcomeBody{
+      padding: 14px 16px;
+      color: #1f2a37;
+    }
+    #welcomeBody p{
+      margin: 0 0 10px 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color:#2b2b2b;
+    }
+    #welcomeSteps{
+      margin: 10px 0 0 0;
+      padding: 0 0 0 18px;
+      font-size: 13px;
+      color:#2b2b2b;
+      line-height: 1.45;
+    }
+    #welcomeFooter{
+      padding: 12px 16px 16px 16px;
+      border-top: 1px solid #eee;
+      display:flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    #welcomeOkBtn{
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid #2b6cb0;
+      background: #2b6cb0;
+      color: white;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    #welcomeOkBtn:hover{ background:#1f5aa6; }
+    #welcomeHintSmall{
+      font-size: 12px;
+      color:#5a5a5a;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- welcome screen with instructions dissapears when clicking ok x or pressing escape-->
+  <div id="welcomeOverlay" role="dialog" aria-modal="true" aria-labelledby="welcomeHeaderTitle">
+    <div id="welcomeCard">
+      <div id="welcomeHeader">
+        <h3 id="welcomeHeaderTitle">Welcome to SnowSafe</h3>
+        <button id="welcomeCloseX" title="Close">✕</button>
+      </div>
+      <div id="welcomeBody">
+        <p><b>SnowSafe</b> is a community reporting map for winter mobility issues (icy sidewalks, blocked curb cuts, unplowed bike lanes, and more).</p>
+        <p>Use the map to see reports near you, and add a new report to help others plan safer routes.</p>
+        <ol id="welcomeSteps">
+          <li>Click <b>Make report</b></li>
+          <li>Click the map to drop a location</li>
+          <li>Choose issue type + severity, add a short note, then submit</li>
+        </ol>
+        <div id="welcomeHintSmall">Tip: Click any report to zoom in and highlight affected nearby segments.</div>
+      </div>
+      <div id="welcomeFooter">
+        <button id="welcomeOkBtn">OK, got it</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="makeReportBtn">Make report</button>
+  <button id="clearSelectionBtn">Clear selection</button>
+  <div id="viewDiv"></div>
+  <div id="brandBadge">Sustainable Transportation • Community Mobility Reports</div>
+
+  <div id="sidebar">
+    <div id="sidebarHeader">
+      <h3 id="sidebarTitle">Community Reports</h3>
+      <button id="closeSidebar" title="Close">✕</button>
+    </div>
+
+    <div class="section">
+      <div class="row" style="justify-content:space-between; gap:8px;">
+        <div class="pill" id="statTotal">Total: —</div>
+        <div class="pill" id="statActive">Active: —</div>
+        <div class="pill" id="statCritical">Critical: —</div>
+        <div class="pill" id="statInView">In view: —</div>
+      </div>
+      <div class="hint">Tip: Use filters + click a report card to zoom to it.</div>
+    </div>
+
+    <div class="section">
+      <div class="row" style="gap:10px;">
+        <div style="flex:1;">
+          <label for="filterStatus">Status</label>
+          <select id="filterStatus">
+            <option value="ALL">All</option>
+            <option value="Open" selected>Open</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label for="filterSeverity">Severity</label>
+          <select id="filterSeverity">
+            <option value="ALL" selected>All</option>
+            <option value="Low">Low</option>
+            <option value="Moderate">Moderate</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label for="filterType">Issue type</label>
+        <select id="filterType">
+          <option value="ALL" selected>All</option>
+        </select>
+      </div>
+
+      <div class="row" style="margin-top:10px; justify-content:space-between;">
+        <button class="btn" id="resetFilters">Reset</button>
+        <button class="btn" id="refreshFeed">Refresh</button>
+        <button class="btn" id="clearAffected">Clear highlight</button>
+      </div>
+    </div>
+
+    <div class="section" id="reportFormSection" style="display:none;">
+      <div class="warn" id="pickLocationHint">
+        <b>Step 1:</b> Click the map to choose a location for your report.
+      </div>
+
+      <div style="margin-top:10px;">
+        <label for="reportType">Issue type</label>
+        <select id="reportType"></select>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label for="reportSeverity">Severity</label>
+        <select id="reportSeverity">
+          <option>Low</option>
+          <option>Moderate</option>
+          <option>High</option>
+          <option>Critical</option>
+        </select>
+      </div>
+
+      <div style="margin-top:10px;">
+        <label for="reportDesc">Description</label>
+        <textarea id="reportDesc" placeholder="What’s happening? (keep it short + useful)"></textarea>
+      </div>
+
+      <div style="margin-top:10px;">
+        <div class="row" style="justify-content:space-between;">
+          <button class="btn" id="cancelReport">Cancel</button>
+          <button class="btn btnPrimary" id="submitReport" disabled>Submit report</button>
+        </div>
+        <div class="hint" id="locationStatus">Location: not set</div>
+      </div>
+
+      <div style="margin-top:10px; display:none;" id="dupeWarning" class="warn"></div>
+      <div style="margin-top:10px; display:none;" id="submitMsg"></div>
+    </div>
+
+    <div class="section">
+      <div class="row" style="justify-content:space-between;">
+        <div class="muted"><b>Reports feed</b> (newest first)</div>
+      </div>
+      <div style="margin-top:10px;" id="cards"></div>
+      <div style="margin-top:10px;" class="muted" id="feedNote"></div>
+    </div>
+  </div>
+
+  <script>
+    // welcome screen --> opens right away
+    (function(){
+      const overlay = document.getElementById("welcomeOverlay");
+      const okBtn = document.getElementById("welcomeOkBtn");
+      const closeX = document.getElementById("welcomeCloseX");
+
+      function closeWelcome(){
+        if (!overlay) return;
+        overlay.style.display = "none";
+      }
+
+      if (okBtn) okBtn.addEventListener("click", closeWelcome);
+      if (closeX) closeX.addEventListener("click", closeWelcome);
+
+      // click outside card closes
+      if (overlay){
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) closeWelcome();
+        });
+      }
+
+      // Esc closes welcome popup
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeWelcome();
+      });
+    })();
+//starts the ArcGIS app
+    require([
+      "esri/WebMap",
+      "esri/views/MapView",
+      "esri/widgets/LayerList",
+      "esri/widgets/Expand",
+      "esri/widgets/Search",
+      "esri/geometry/Extent",
+      "esri/widgets/Legend",
+      "esri/Graphic",
+      "esri/core/reactiveUtils",
+      "esri/geometry/geometryEngine",
+      "esri/layers/GraphicsLayer",
+      "esri/layers/FeatureLayer",
+      "esri/layers/support/FeatureFilter"
+    ], function(
+      WebMap, MapView, LayerList, Expand, Search, Extent, Legend,
+      Graphic, reactiveUtils, geometryEngine, GraphicsLayer,
+      FeatureLayer, FeatureFilter
+    ) {
+// loads ArgGIS online map
+      const webmap = new WebMap({
+        portalItem: { id: "07bc2c6206b94d308ad7189df04c4f24" }
+      });
+// creates view
+      const view = new MapView({
+        container: "viewDiv",
+        map: webmap
+      });
+//toronto extent
+      const torontoExtent = new Extent({
+        xmin: -8920000,
+        ymin: 5385000,
+        xmax: -8785000,
+        ymax: 5468000,
+        spatialReference: { wkid: 3857 }
+      });
+
+      // sidebar controls
+      const sidebar = document.getElementById("sidebar");
+      const sidebarTitle = document.getElementById("sidebarTitle");
+
+      const makeBtn = document.getElementById("makeReportBtn");
+      const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+      const closeSidebarBtn = document.getElementById("closeSidebar");
+      const reportFormSection = document.getElementById("reportFormSection");
+      const submitReportBtn = document.getElementById("submitReport");
+      const cancelReportBtn = document.getElementById("cancelReport");
+      const locationStatus = document.getElementById("locationStatus");
+      const submitMsg = document.getElementById("submitMsg");
+
+      const filterStatus = document.getElementById("filterStatus");
+      const filterSeverity = document.getElementById("filterSeverity");
+      const filterType = document.getElementById("filterType");
+      const resetFiltersBtn = document.getElementById("resetFilters");
+      const refreshFeedBtn = document.getElementById("refreshFeed");
+      const clearAffectedBtn = document.getElementById("clearAffected");
+
+      const reportType = document.getElementById("reportType");
+      const reportSeverity = document.getElementById("reportSeverity");
+      const reportDesc = document.getElementById("reportDesc");
+
+      const cards = document.getElementById("cards");
+      const feedNote = document.getElementById("feedNote");
+
+      const statTotal = document.getElementById("statTotal");
+      const statActive = document.getElementById("statActive");
+      const statCritical = document.getElementById("statCritical");
+      const statInView = document.getElementById("statInView");
+
+      // app state block -- what needs to be remembered while running
+      let issuesLayer = null;
+      let fields = null;
+      let fieldMap = null;
+      let creating = false;
+      let chosenPoint = null;
+      let chosenGraphic = null;
+      let debounceTimer = null;
+
+      // only one popup handler handle
+      let popupActionHandle = null;
+
+      // equity overlay state
+      let cisvLayer = null;
+      let cisvLayerView = null;
+
+   
+      // affected segments --> create graphics layer for highlighting (temporary)
+      
+      let cyclingLayer = null;
+      let sidewalksLayer = null;
+
+      const affectedBufferLayer = new GraphicsLayer({ title: "Affected buffer", listMode: "hide" });
+      const affectedSegmentsLayer = new GraphicsLayer({ title: "Affected segments", listMode: "hide" });
+
+      webmap.add(affectedBufferLayer);
+      webmap.add(affectedSegmentsLayer);
+
+      // finds layer regardless if in group layer or not
+      function findLayerDeep(map, matchFn){
+        let found = null;
+
+        function walk(layer){
+          if (!layer || found) return;
+
+          if (matchFn(layer)) { found = layer; return; }
+
+          if (layer.layers && layer.layers.length){
+            layer.layers.forEach(walk);
+          }
+          if (layer.sublayers && layer.sublayers.length){
+            layer.sublayers.forEach(walk);
+          }
+        }
+
+        map.layers.forEach(walk);
+        return found;
+      }
+// checks to see if a lyers title matches
+      function titleMatch(layer, wanted){
+        const t = (layer.title || "").toLowerCase();
+        const w = wanted.toLowerCase();
+        return t === w || t.includes(w) || t.includes(`l1 / ${w}`);
+      }
+// buffer sizes for severity points (low = smaller buffer critical = large buffer)
+      function bufferMetersFromSeverity(sev){
+        const s = (sev || "").toLowerCase();
+        if (s === "critical") return 120;
+        if (s === "high") return 80;
+        if (s === "moderate") return 50;
+        return 30;
+      }
+// removes the highlight graphic ie clears the buffer polygon, highlighted lines and text summary (text summary does not work great)
+      function clearAffected(){
+        affectedBufferLayer.removeAll();
+        affectedSegmentsLayer.removeAll();
+        feedNote.textContent = "";
+      }
+      if (clearAffectedBtn) clearAffectedBtn.addEventListener("click", clearAffected);
+// highlight affected area - main chunk 
+      async function showAffectedSegments(point, severity){
+        clearAffected();// clear old highlights
+        if (!point || !geometryEngine) return;
+
+        const meters = bufferMetersFromSeverity(severity);
+        const buffer = geometryEngine.buffer(point, meters, "meters");
+        if (!buffer) return;
+// draw buffer 
+        affectedBufferLayer.add(new Graphic({
+          geometry: buffer,
+          symbol: {
+            type: "simple-fill",
+            color: [0,120,255,0.08],
+            outline: { color: [0,120,255,0.6], width: 2, style: "dash" }
+          }
+        }));
+
+        affectedSegmentsLayer.opacity = 0;
+// query line layers inside buffer and draw --> colors buffers differently depending on affected segments ie sidewalks: orange cycling: blue
+        async function queryAndDraw(layer, label){
+          if (!layer) return 0;
+
+          const canQuery = typeof layer.createQuery === "function" && typeof layer.queryFeatures === "function";
+          if (!canQuery) return 0;
+
+          const q = layer.createQuery();
+          q.geometry = buffer;
+          q.spatialRelationship = "intersects";
+          q.returnGeometry = true;
+          q.outFields = [];
+          q.num = 5000;
+
+          try{
+            const res = await layer.queryFeatures(q);
+            const feats = res?.features || [];
+            if (!feats.length) return 0;
+
+            feats.forEach(f => {
+              affectedSegmentsLayer.add(new Graphic({
+                geometry: f.geometry,
+                symbol: {
+                  type: "simple-line",
+                  color: label === "sidewalk" ? [255,140,0,0.9] : [0,120,255,0.9],
+                  width: 4,
+                  cap: "round",
+                  join: "round"
+                }
+              }));
+            });
+
+            return feats.length;
+          } catch(e){
+            console.warn("queryFeatures failed for:", layer?.title, e);
+            return 0;
+          }
+        }
+
+        const nSidewalks = await queryAndDraw(sidewalksLayer, "sidewalk");
+        const nCycling   = await queryAndDraw(cyclingLayer, "cycling");
+
+        feedNote.innerHTML = `<b>${nSidewalks}</b> sidewalk segments and <b>${nCycling}</b> cycling segments within <b>${meters}m</b>.`;
+
+        setTimeout(() => { affectedSegmentsLayer.opacity = 1; }, 50);
+      }
+
+      
+      // UI helpers
+      
+      function openSidebar(){ sidebar.style.display = "block"; } // shows sidebar
+      function closeSidebar(){ sidebar.style.display = "none"; stopCreateFlow(); }//hides side bar makesn sure u do not get stuck on click map to set location
+
+      closeSidebarBtn.addEventListener("click", closeSidebar);//closes side bar
+// make report button --> opens side bar shows report form and begins create mode
+      makeBtn.addEventListener("click", () => {
+        openSidebar();
+        reportFormSection.style.display = "block";
+        startCreateFlow();
+      });
+// cancel report button --> hides form exits create mode
+      cancelReportBtn.addEventListener("click", () => {
+        stopCreateFlow();
+        reportFormSection.style.display = "none";
+        submitMsg.style.display = "none";
+        submitMsg.innerHTML = "";
+      });
+// reset filter buttons
+      resetFiltersBtn.addEventListener("click", () => {
+        filterStatus.value = "Open";
+        filterSeverity.value = "ALL";
+        filterType.value = "ALL";
+        applyFiltersAndRefresh();
+      });
+//  this makes it so any change in filter triggers a refresh/re-query
+      refreshFeedBtn.addEventListener("click", applyFiltersAndRefresh);
+      filterStatus.addEventListener("change", applyFiltersAndRefresh);
+      filterSeverity.addEventListener("change", applyFiltersAndRefresh);
+      filterType.addEventListener("change", applyFiltersAndRefresh);
+// prevents over refreshing runs function once
+      function debounce(fn, ms=350){
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fn, ms);
+      }
+// auto detects layer field names
+      function findField(candidates){
+        if (!fields) return null;
+        const lower = fields.map(f => ({
+          name: f.name,
+          alias: (f.alias || "").toLowerCase(),
+          lname: f.name.toLowerCase()
+        }));
+
+        for (const c of candidates){
+          const lc = c.toLowerCase();
+          const match = lower.find(f => f.lname === lc || f.alias === lc);
+          if (match) return match.name;
+        }
+        for (const c of candidates){
+          const lc = c.toLowerCase();
+          const match = lower.find(f => f.alias.includes(lc) || f.lname.includes(lc));
+          if (match) return match.name;
+        }
+        return null;
+      }
+//avoid any broken sql or html injection
+      function escapeSqlString(v){ return String(v).replace(/'/g, "''"); }
+
+      function escapeHtml(str){
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+// ui and coloring for severity symbology
+      function sevChipStyle(sev){
+        const s = (sev || "").toLowerCase();
+        if (s === "low") return "background:#e9f7ef;border-color:#cfeedd;color:#1f5b2a;";
+        if (s === "moderate") return "background:#fff8e1;border-color:#ffe2a6;color:#6a4b00;";
+        if (s === "high") return "background:#fff1e6;border-color:#ffd1b0;color:#7a2f00;";
+        if (s === "critical") return "background:#ffecec;border-color:#ffc4c4;color:#8a0b0b;";
+        return "background:#f5f5f5;border-color:#e5e5e5;color:#333;";
+      }
+//store point and make x marker --> enables "submit report"
+      function setChosenPoint(pt){
+        chosenPoint = pt;
+        if (chosenGraphic) view.graphics.remove(chosenGraphic);
+
+        chosenGraphic = new Graphic({
+          geometry: pt,
+          symbol: {
+            type: "simple-marker",
+            style: "x",
+            size: 14,
+            color: "black",
+            outline: { color: "black", width: 2 }
+          }
+        });
+
+        view.graphics.add(chosenGraphic);
+
+        if (typeof pt.longitude === "number" && typeof pt.latitude === "number") {
+          locationStatus.textContent = `Location: set (${pt.longitude.toFixed(5)}, ${pt.latitude.toFixed(5)})`;
+        } else {
+          locationStatus.textContent = "Location: set";
+        }
+
+        submitReportBtn.disabled = false;
+      }
+// activiated "create" mode clears old markers and disables submit until map is clicked again (overall just Ui stuff)
+      function startCreateFlow(){
+        creating = true;
+        submitReportBtn.disabled = true;
+        chosenPoint = null;
+        if (chosenGraphic) { view.graphics.remove(chosenGraphic); chosenGraphic = null; }
+        locationStatus.textContent = "Location: not set";
+        submitMsg.style.display = "none";
+        submitMsg.innerHTML = "";
+      }
+// turn off the "create" mode clearing the selection
+      function stopCreateFlow(){
+        creating = false;
+        submitReportBtn.disabled = true;
+        chosenPoint = null;
+        if (chosenGraphic) { view.graphics.remove(chosenGraphic); chosenGraphic = null; }
+        locationStatus.textContent = "Location: not set";
+      }
+//this is why map can be clicked to place report when not creatingn report map clicks only do popups
+      view.on("click", async (event) => {
+        if (!creating) return;
+        const mapPoint = view.toMap({ x: event.x, y: event.y });
+        if (!mapPoint) return;
+        setChosenPoint(mapPoint);
+      });
+
+      submitReportBtn.addEventListener("click", async () => {
+        submitMsg.style.display = "none";
+        submitMsg.innerHTML = "";
+
+        if (!issuesLayer || !chosenPoint) return;
+// This section validates the forms, builds attributes and resfreshes layer and fields
+        const typeVal = reportType.value || "";
+        const sevVal  = reportSeverity.value || "Low";
+        const descVal = reportDesc.value || "";
+// validates form
+        if (!typeVal || typeVal === "ALL") {
+          submitMsg.style.display = "block";
+          submitMsg.className = "warn";
+          submitMsg.innerHTML = "<b>Missing issue type.</b> Please choose an issue type.";
+          return;
+        }
+        if (!descVal.trim()) {
+          submitMsg.style.display = "block";
+          submitMsg.className = "warn";
+          submitMsg.innerHTML = "<b>Missing description.</b> Add a quick description so others know what to expect.";
+          return;
+        }
+// builds atributes
+        const attrs = {};
+        if (fieldMap.typeField)   attrs[fieldMap.typeField] = typeVal;
+        if (fieldMap.sevField)    attrs[fieldMap.sevField]  = sevVal;
+        if (fieldMap.descField)   attrs[fieldMap.descField] = descVal;
+        if (fieldMap.statusField) attrs[fieldMap.statusField] = "Open";
+        if (fieldMap.createdField) attrs[fieldMap.createdField] = Date.now();
+
+        try{
+          submitReportBtn.disabled = true;
+// add feature top hosted layer --> refresh ui 
+          const edits = await issuesLayer.applyEdits({
+            addFeatures: [{ geometry: chosenPoint, attributes: attrs }]
+          });
+
+          const addRes = edits?.addFeatureResults?.[0];
+          if (addRes?.error) throw addRes.error;
+
+          submitMsg.style.display = "block";
+          submitMsg.className = "ok";
+          submitMsg.innerHTML = "<b>Submitted!</b> Your report is now visible to others.";
+
+          stopCreateFlow();
+          reportFormSection.style.display = "none";
+          reportDesc.value = "";
+
+          issuesLayer.refresh();
+          applyFiltersAndRefresh();
+
+        } catch(e){
+          console.log("Submit error:", e);
+          submitMsg.style.display = "block";
+          submitMsg.className = "warn";
+          submitMsg.innerHTML = "<b>Could not submit.</b> Check console (F12) for permission/required field errors.";
+          submitReportBtn.disabled = false;
+        }
+      });
+// creates sql filter string ie status = open severity = high
+      function buildWhere(){
+        const parts = [];
+        if (fieldMap.statusField && filterStatus.value !== "ALL") {
+          parts.push(`${fieldMap.statusField} = '${escapeSqlString(filterStatus.value)}'`);
+        }
+        if (fieldMap.sevField && filterSeverity.value !== "ALL") {
+          parts.push(`${fieldMap.sevField} = '${escapeSqlString(filterSeverity.value)}'`);
+        }
+        if (fieldMap.typeField && filterType.value !== "ALL") {
+          parts.push(`${fieldMap.typeField} = '${escapeSqlString(filterType.value)}'`);
+        }
+        return parts.length ? parts.join(" AND ") : "1=1";
+      }
+// filter layer (visually) then refresheds sidebar 
+      function applyFiltersAndRefresh(){
+        if (!issuesLayer || !fieldMap) return;
+        issuesLayer.definitionExpression = buildWhere();
+        debounce(async () => {
+          await refreshStats();
+          await refreshFeed();
+        }, 250);
+      }
+
+      async function refreshStats(){
+        if (!issuesLayer || !fieldMap) return;
+
+        try{
+          const totalQ = issuesLayer.createQuery();
+          totalQ.where = "1=1";
+          statTotal.textContent = "Total: " + (await issuesLayer.queryFeatureCount(totalQ));
+
+          if (fieldMap.statusField){
+            const aQ = issuesLayer.createQuery();
+            aQ.where = `${fieldMap.statusField} = 'Open'`;
+            statActive.textContent = "Active: " + (await issuesLayer.queryFeatureCount(aQ));
+          } else statActive.textContent = "Active: —";
+
+          if (fieldMap.statusField && fieldMap.sevField){
+            const cQ = issuesLayer.createQuery();
+            cQ.where = `${fieldMap.statusField} = 'Open' AND ${fieldMap.sevField} = 'Critical'`;
+            statCritical.textContent = "Critical: " + (await issuesLayer.queryFeatureCount(cQ));
+          } else statCritical.textContent = "Critical: —";
+
+          const inViewQ = issuesLayer.createQuery();
+          inViewQ.where = buildWhere();
+          inViewQ.geometry = view.extent;
+          inViewQ.spatialRelationship = "intersects";
+          statInView.textContent = "In view: " + (await issuesLayer.queryFeatureCount(inViewQ));
+        } catch(e){
+          console.log("Stats error:", e);
+        }
+      }
+//builds report list --> clicking a report zooms to it and opens up popup and highlights affected segments
+      async function refreshFeed(){
+        if (!issuesLayer || !fieldMap) return;
+
+        cards.innerHTML = "";
+        feedNote.textContent = "Loading…";
+
+        const q = issuesLayer.createQuery();
+        q.where = buildWhere();
+        q.geometry = view.extent;
+        q.spatialRelationship = "intersects";
+        q.returnGeometry = true;
+        q.outFields = ["*"];
+        q.num = 50;
+
+        if (fieldMap.createdField) q.orderByFields = [`${fieldMap.createdField} DESC`];
+        else q.orderByFields = [`${issuesLayer.objectIdField} DESC`];
+
+        try{
+          const res = await issuesLayer.queryFeatures(q);
+
+          if (!res.features.length){
+            feedNote.textContent = "No reports match your filters in the current view.";
+            return;
+          }
+
+          feedNote.textContent = `${res.features.length} report(s) in view (showing up to 50).`;
+
+          for (const f of res.features){
+            const attrs = f.attributes || {};
+            const type = fieldMap.typeField ? (attrs[fieldMap.typeField] || "Report") : "Report";
+            const sev  = fieldMap.sevField ? (attrs[fieldMap.sevField] || "—") : "—";
+            const status = fieldMap.statusField ? (attrs[fieldMap.statusField] || "—") : "—";
+            const desc = fieldMap.descField ? (attrs[fieldMap.descField] || "") : "";
+            const shortDesc = desc.length > 90 ? (desc.slice(0, 90) + "…") : desc;
+
+            const div = document.createElement("div");
+            div.className = "card";
+            div.innerHTML = `
+              <div class="cardTop">
+                <div style="flex:1;">
+                  <div class="cardTitle">${escapeHtml(type)}</div>
+                  <div class="cardMeta">${escapeHtml(status)}</div>
+                </div>
+                <div class="sevChip" style="${sevChipStyle(sev)}">${escapeHtml(sev)}</div>
+              </div>
+              <div class="cardMeta" style="margin-top:8px;">${escapeHtml(shortDesc)}</div>
+            `;
+
+            div.addEventListener("click", async () => {
+              openSidebar();
+              await view.goTo({ target: f.geometry, zoom: 18 });
+              view.openPopup({ features: [f], location: f.geometry });
+              await showAffectedSegments(f.geometry, sev);
+            });
+
+            cards.appendChild(div);
+          }
+
+        } catch(e){
+          console.log("Feed error:", e);
+          feedNote.textContent = "Could not load feed. Check console.";
+        }
+      }
+
+      function setupPopupActions() {
+        if (!issuesLayer || !fieldMap) return;
+
+        const popupFieldInfos = [];
+        if (fieldMap?.descField)   popupFieldInfos.push({ fieldName: fieldMap.descField,   label: "Description" });
+        if (fieldMap?.typeField)   popupFieldInfos.push({ fieldName: fieldMap.typeField,   label: "Issue Type" });
+        if (fieldMap?.sevField)    popupFieldInfos.push({ fieldName: fieldMap.sevField,    label: "Severity" });
+        if (fieldMap?.statusField) popupFieldInfos.push({ fieldName: fieldMap.statusField, label: "Status" });
+
+        const myActions = [
+          { title: "Resolve", id: "resolve-report", className: "esri-icon-check-mark" },
+          { title: "Reopen",  id: "reopen-report",  className: "esri-icon-refresh" },
+          { title: "Delete",  id: "delete-report",  className: "esri-icon-trash" }
+        ];
+// popup toolbox uses applyedits() to ie resolve then updatesn status to resolve reopen updates status to open etc
+        issuesLayer.popupEnabled = true;
+        issuesLayer.popupTemplate = {
+          title: fieldMap?.typeField ? `{${fieldMap.typeField}}` : "Community Report",
+          content: [{ type: "fields", fieldInfos: popupFieldInfos }],
+          actions: myActions
+        };
+
+        if (popupActionHandle) {
+          popupActionHandle.remove();
+          popupActionHandle = null;
+        }
+
+        reactiveUtils.whenOnce(() => view?.popup?.viewModel).then(() => {
+          if (popupActionHandle) {
+            popupActionHandle.remove();
+            popupActionHandle = null;
+          }
+
+          popupActionHandle = view.popup.viewModel.on("trigger-action", async (event) => {
+            const actionId = event?.action?.id;
+            if (!actionId) return;
+
+            const feature = view.popup.selectedFeature;
+            if (!feature) return;
+
+            const oidField = issuesLayer.objectIdField;
+            const oid = feature.attributes?.[oidField];
+            if (oid == null) return;
+
+            try {
+              let res;
+
+              if (actionId === "resolve-report") {
+                res = await issuesLayer.applyEdits({
+                  updateFeatures: [{
+                    attributes: { [oidField]: oid, [fieldMap.statusField]: "Resolved" }
+                  }]
+                });
+              }
+
+              if (actionId === "reopen-report") {
+                res = await issuesLayer.applyEdits({
+                  updateFeatures: [{
+                    attributes: { [oidField]: oid, [fieldMap.statusField]: "Open" }
+                  }]
+                });
+              }
+
+              if (actionId === "delete-report") {
+                res = await issuesLayer.applyEdits({
+                  deleteFeatures: [{ objectId: oid }]
+                });
+              }
+
+              const uErr = res?.updateFeatureResults?.[0]?.error;
+              const dErr = res?.deleteFeatureResults?.[0]?.error;
+              if (uErr || dErr) throw (uErr || dErr);
+
+              view.popup.close();
+              issuesLayer.refresh();
+              applyFiltersAndRefresh();
+
+            } catch (e) {
+              console.log("Popup edit/delete failed:", e);
+              submitMsg.style.display = "block";
+              submitMsg.className = "warn";
+              submitMsg.innerHTML =
+                "<b>Edit/Delete failed.</b> Check Console for applyEdits error details.";
+            }
+          });
+        });
+      }
+
+      // mainloader --> zooms into toronto and locks map to specified extent
+      view.when(async () => {
+        await view.goTo(torontoExtent);
+        view.constraints = {
+          geometry: torontoExtent,
+          rotationEnabled: false,
+          minZoom: 10,
+          maxZoom: 20
+        };
+
+        const search = new Search({ view, includeDefaultSources: true });//add search widget
+        view.ui.add(search, "top-left");
+        search.viewModel.searchArea = torontoExtent;
+
+        const layerList = new LayerList({//add layer list
+          view,
+          listItemCreatedFunction: (event) => {
+            const item = event.item;
+            const original = item.layer?.title || item.title;
+
+            const hideThese = new Set(["pedestrian", "cycling"]);
+            if (hideThese.has(original)) { item.hidden = true; return; }
+
+            const renameMap = {
+              "Community Updates": "Community Reports",
+              "convertscv_XYTableToPoint": "Bike Share Stations",
+              "TS_PlowTOGT_Plow_Route_view": "Snow Plow Routes",
+              "TS_PlowTOGT Vehicle QA": "Active Snow Plows",
+              "TTC_SUBWAY_LINES_WGS84": "Subway Lines"
+            };
+            if (renameMap[original]) item.title = renameMap[original];
+          }
+        });
+
+        const layerExpand = new Expand({
+          view,
+          content: layerList,
+          expanded: false,
+          expandTooltip: "Layers"
+        });
+        view.ui.add(layerExpand, "top-right");
+
+        // searches webmap for cycling paths and sidewalks stores them as variables
+        cyclingLayer = findLayerDeep(webmap, (l) => titleMatch(l, "Cycling Paths"));
+        sidewalksLayer = findLayerDeep(webmap, (l) => titleMatch(l, "Sidewalks and Walkways"));
+
+        
+        // CSIV/ Equity layer using arcgis online --> connects then adds it to top layer
+       
+        const CISV_ITEM_ID = "3bae20e0a5ee41b68b923b4efb5ad02e";
+        const TORONTO_BOUNDARY_TITLE = "Toronto City Boundary";
+
+        cisvLayer = new FeatureLayer({
+          portalItem: { id: CISV_ITEM_ID },
+          title: "Equity (CISV – Vulnerability)",
+          opacity: 0.35,
+          visible: true,
+          popupEnabled: true
+        });
+
+        // add cisv --> bring to top
+        webmap.add(cisvLayer);
+        try { webmap.reorder(cisvLayer, webmap.layers.length - 1); } catch(e) {}
+
+        // clip and filter CISV to toronto boundary (could not download dataset so need to use hosted layer)
+        try {
+          const torontoBoundary = webmap.layers.find(l => l.title === TORONTO_BOUNDARY_TITLE);
+
+          if (torontoBoundary) {
+            await torontoBoundary.load();
+            await cisvLayer.load();
+
+            const bq = torontoBoundary.createQuery();
+            bq.where = "1=1";
+            bq.returnGeometry = true;
+            bq.outFields = [];
+
+            const bres = await torontoBoundary.queryFeatures(bq);
+
+            let torontoGeom = null;
+            if (bres.features.length === 1) {
+              torontoGeom = bres.features[0].geometry;
+            } else if (bres.features.length > 1) {
+              torontoGeom = geometryEngine.union(bres.features.map(f => f.geometry));
+            }
+
+            if (torontoGeom) {
+              cisvLayerView = await view.whenLayerView(cisvLayer);
+              cisvLayerView.filter = new FeatureFilter({
+                geometry: torontoGeom,
+                spatialRelationship: "intersects"
+              });//debugging and status messages
+              console.log("✅ CISV filtered to Toronto boundary + drawn on top");
+            } else {
+              console.warn("Toronto boundary returned no geometry—CISV not filtered.");
+            }
+          } else {
+            console.warn("Could not find Toronto boundary layer by title:", TORONTO_BOUNDARY_TITLE);
+          }
+        } catch (e) {
+          console.warn("CISV/Boundary filter failed (still works, just unfiltered):", e);
+        }
+
+        // this finds the report layer
+        issuesLayer = webmap.layers.find(l => l.title === "Community Updates");
+        if (!issuesLayer) {
+          console.log("Could not find 'Community Updates'. Layers are:");
+          webmap.layers.forEach(l => console.log(l.title));
+          return;
+        }
+        await issuesLayer.load();
+        fields = issuesLayer.fields;
+
+        fieldMap = {
+          sevField: findField(["Severity", "severity", "Sev", "Priority", "Risk"]),
+          typeField: findField(["IssueType", "Issue Type", "Type", "Category", "issue_type"]),
+          statusField: findField(["Status", "status", "State", "Resolved", "OpenClosed"]),
+          descField: findField(["Description", "Desc", "Notes", "Note", "Comment", "details"]),
+          createdField: findField(["CreationDate", "CreatedDate", "created_date", "Date", "ReportedOn", "EditDate"])
+        };
+
+        // when popup changes to a new selected feature update ui and highlight
+        reactiveUtils.watch(
+          () => view.popup.selectedFeature,
+          async (feature) => {
+            if (!feature) return;
+
+            const isReport =
+              feature.layer === issuesLayer ||
+              feature.layer?.title === "Community Updates";
+            if (!isReport) return;
+
+            reportFormSection.style.display = "none";
+
+            const attrs = feature.attributes || {};
+            const sev = fieldMap?.sevField ? (attrs[fieldMap.sevField] || "Low") : "Low";
+
+            sidebarTitle.textContent = `Affected Area – ${sev}`;
+
+            if (cyclingLayer) cyclingLayer.opacity = 0.2;
+            if (sidewalksLayer) sidewalksLayer.opacity = 0.2;
+
+            openSidebar();
+            await showAffectedSegments(feature.geometry, sev);
+          }
+        );
+
+        reactiveUtils.watch(
+          () => view.popup.visible,
+          (visible) => {
+            clearSelectionBtn.style.display = visible ? "block" : "none";
+            if (!visible){
+              sidebarTitle.textContent = "Community Reports";
+              clearAffected();
+              if (cyclingLayer) cyclingLayer.opacity = 1;
+              if (sidewalksLayer) sidewalksLayer.opacity = 1;
+            }
+          }
+        );
+
+        clearSelectionBtn.addEventListener("click", () => {
+          view.popup.close();
+          clearAffected();
+        });
+
+        // Issue type dropdowns
+        const baseTypes = [
+          "Icy sidewalk",
+          "Blocked curb cut",
+          "Unplowed bike lane",
+          "Unplowed sidewalk",
+          "Dangerous crossing",
+          "Other"
+        ];
+
+        let typeOptions = [...baseTypes];
+        if (fieldMap.typeField) {
+          const tf = fields.find(f => f.name === fieldMap.typeField);
+          const dom = tf && tf.domain;
+          if (dom && dom.type === "coded-value" && dom.codedValues?.length) {
+            typeOptions = dom.codedValues.map(cv => cv.name || cv.code);
+          }
+        }
+
+        reportType.innerHTML = typeOptions.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+        filterType.innerHTML =
+          `<option value="ALL" selected>All</option>` +
+          typeOptions.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+
+        function mk(color){
+          return {
+            type: "simple-marker",
+            style: "circle",
+            size: 10,
+            color,
+            outline: { color: "white", width: 1 }
+          };
+        }
+
+        if (fieldMap.sevField) {
+          issuesLayer.renderer = {
+            type: "unique-value",
+            field: fieldMap.sevField,
+            uniqueValueInfos: [
+              { value: "Low",      label: "Low",      symbol: mk("green") },
+              { value: "Moderate", label: "Moderate", symbol: mk("yellow") },
+              { value: "High",     label: "High",     symbol: mk("orange") },
+              { value: "Critical", label: "Critical", symbol: mk("red") }
+            ],
+            defaultSymbol: mk("gray")
+          };
+        }
+
+        issuesLayer.featureReduction = null;
+        issuesLayer.refreshInterval = 0.1;
+
+        setupPopupActions();
+
+        // Legend
+        const plowRoutesLayer = webmap.layers.find(l => l.title === "TS_PlowTOGT_Plow_Route_view");
+        const plowVehiclesLayer = webmap.layers.find(l => l.title === "TS_PlowTOGT Vehicle QA");
+
+        const legend = new Legend({
+          view,
+          layerInfos: [
+            { layer: issuesLayer, title: "Community Reports (Severity)" },
+            { layer: cisvLayer, title: "Equity (CISV – Vulnerability)" }
+          ]
+        });
+
+        if (plowRoutesLayer) legend.layerInfos.push({ layer: plowRoutesLayer, title: "Snow Plow Routes" });
+        if (plowVehiclesLayer) legend.layerInfos.push({ layer: plowVehiclesLayer, title: "Active Snow Plows" });
+
+        const legendExpand = new Expand({
+          view,
+          content: legend,
+          expanded: false,
+          expandTooltip: "Legend"
+        });
+        view.ui.add(legendExpand, "bottom-right");
+
+        openSidebar();
+        applyFiltersAndRefresh();
+        await refreshStats();
+        await refreshFeed();
+
+        view.watch("extent", () => debounce(async () => {
+          await refreshStats();
+          await refreshFeed();
+        }, 400));
+      });
+
+    });
+  </script>
+</body>
+</html>
